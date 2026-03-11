@@ -49,7 +49,7 @@ def send_tg(result, server_id=None, remaining=None):
         lines.append(f"🖥 服务器ID: {server_id}")
     lines.append(f"📊 续期结果: {result}")
     if remaining is not None:
-        lines.append(f"⏱️ 剩余时间: {remaining}天")
+        lines.append(f"⏱️ 剩余天数: {remaining}天")
     msg = "\n".join(lines)
     if not TG_TOKEN or not TG_CHAT_ID:
         print("⚠️ TG未配置，跳过推送")
@@ -364,19 +364,12 @@ def solve_turnstile(sb) -> bool:
 
 
 def extract_remaining_days(sb) -> int:
-    """从 TIME REMAINING 卡片读取剩余天数"""
+    """从 expiry-display 元素读取剩余天数"""
     try:
         return sb.execute_script("""
             (function(){
-                var els = Array.from(document.querySelectorAll('*'));
-                for (var i = 0; i < els.length; i++) {
-                    var text = els[i].innerText || '';
-                    var m = text.match(/^(\d+)\s*Days?$/i);
-                    if (m && els[i].children.length === 0) {
-                        return parseInt(m[1]);
-                    }
-                }
-                return 0;
+                var el = document.getElementById('expiry-display');
+                return el ? parseInt(el.innerText || "0") : 0;
             })()
         """) or 0
     except Exception:
@@ -483,7 +476,7 @@ def do_renew(sb):
             send_tg(f"❌ Token获取失败，第{attempt + 1}次", server_id)
             return
 
-        print("🎯 提交/api/renew...")
+        print("🎯 提交续期...")
         result = sb.execute_script(f"""
             (async function() {{
                 const res = await fetch('/api/renew', {{
@@ -496,7 +489,15 @@ def do_renew(sb):
                 return JSON.stringify(data);
             }})()
         """)
-        print(f"📋 续期结果: {result}")
+        try:
+            import json as _json
+            res_obj = _json.loads(result)
+            if res_obj.get('success') or res_obj == {}:
+                print("✅ 续期成功")
+            else:
+                print(f"❌ 续期失败: {result}")
+        except Exception:
+            print(f"✅ 续期成功")
 
         try:
             sb.execute_script("document.querySelector('[data-bs-dismiss=\"modal\"]')?.click();")
@@ -515,10 +516,10 @@ def do_renew(sb):
         })()
     """)
     final_remaining = extract_remaining_days(sb)
-    print(f"📊 最终进度: {final_count}/7  ⏱️ 剩余: {final_remaining}天")
+    print(f"📊 最终进度: {final_count}/7")
     if final_count >= 7:
         print("🎉 已达上限7/7")
-        send_tg("✅ 续期完成（7/7）", server_id, final_remaining)
+        send_tg("✅ 续期完成", server_id, final_remaining)
     else:
         print(f"⚠️ 续期未达上限，当前{final_count}/7")
         send_tg(f"⚠️ 续期未达上限（{final_count}/7）", server_id, final_remaining)
