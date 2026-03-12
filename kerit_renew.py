@@ -140,10 +140,15 @@ def check_ip(proxy: str = None) -> str:
 
 def start_proxy_with_retry(max_retries=3):
     """启动代理，失败时重试"""
+    if not HY2_PROXY_URL:
+        print("⚠️ 未配置代理 URL，使用直连模式")
+        return None, None
+    
     proxy_manager = get_proxy_manager()
     proxy_url = None
     
     if not proxy_manager:
+        print("⚠️ 代理管理器初始化失败，使用直连模式")
         return None, None
     
     for attempt in range(1, max_retries + 1):
