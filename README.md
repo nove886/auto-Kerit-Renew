@@ -14,3 +14,7 @@
 
 ## 📝 Gmail 应用密码生成方式
 Google 账号 → 安全性 → 两步验证（需先开启）→ 应用密码 → 选择"邮件" → 生成 → 将 16 位密码填入 Secret。
+
+感谢以下大佬：
+
+- https://github.com/losy-mify/Kerit-Renew
